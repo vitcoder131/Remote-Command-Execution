@@ -4,17 +4,23 @@
  */
 package remote.command.execution;
 
+import java.sql.Connection;
+import javax.swing.SwingUtilities;
+
 /**
  *
  * @author QuocBao
  */
 public class RemoteCommandExecution {
 
-    /**
-     * @param args the command line arguments
-     */
     public static void main(String[] args) {
+        Connection conn = dbConnect.getConnect();
         // TODO code application logic here
-    }
+        SwingUtilities.invokeLater(() -> {
+            MainForm main = new MainForm();
+            main.setVisible(true);
+            main.setLocationRelativeTo(null);
+        });
     
+}
 }
