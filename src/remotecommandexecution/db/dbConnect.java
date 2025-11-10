@@ -1,20 +1,13 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
+
 package remote.command.execution.db;
 import java.sql.Connection;
-
 import java.sql.DriverManager;
 
-/**
- *
- * @author QuocBao
- */
+
 public class dbConnect {
 
     public static Connection getConnect() {
-        String url = "jdbc:sqlserver://DESKTOP-QP0T1SS:1433;databaseName=QuanLiOto;encrypt=true;trustServerCertificate=true";
+        String url = "jdbc:sqlserver://localhost:1433;databaseName=RCE;encrypt=true;trustServerCertificate=true";
         String user = "sa";
         String password = "12";
         Connection conn = null;
