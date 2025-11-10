@@ -4,8 +4,10 @@
  */
 package remote.command.execution;
 
+import remote.command.execution.db.dbConnect;
 import java.sql.Connection;
 import javax.swing.SwingUtilities;
+import remote.command.execution.gui.ClientGui;
 
 /**
  *
@@ -17,9 +19,9 @@ public class RemoteCommandExecution {
         Connection conn = dbConnect.getConnect();
         // TODO code application logic here
         SwingUtilities.invokeLater(() -> {
-            MainForm main = new MainForm();
-            main.setVisible(true);
-            main.setLocationRelativeTo(null);
+            ClientGui clientgui = new ClientGui();
+            clientgui.setVisible(true);
+            clientgui.setLocationRelativeTo(null);
         });
     
 }
