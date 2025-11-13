@@ -1,35 +1,28 @@
+package remotecommandexecution.db;
 
-package remote.command.execution.db;
 import java.sql.Connection;
 import java.sql.DriverManager;
 
-
 public class dbConnect {
 
-    public static Connection getConnect() {
-        String url = "jdbc:sqlserver://localhost:1433;databaseName=RCE;encrypt=true;trustServerCertificate=true";
-        String user = "sa";
-        String password = "12";
-        Connection conn = null;
-        try {
-            conn  = DriverManager.getConnection(url, user, password);
-            System.out.println("Kết nối thành công");
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Kết nối thành công");
-        }
-        return conn;
-    }
+    private static final String URL =
+        "jdbc:sqlserver://localhost:1433;"
+      + "databaseName=RemoteControlDB;"
+      + "encrypt=true;trustServerCertificate=true";
 
-    public void closeConnect(Connection conn) {
-        if (conn != null) {
-            try {
-                conn.close();
-                
-            } catch (Exception e) {
-             
-                e.printStackTrace();
-            }
+    private static final String USER = "sa";
+    private static final String PASS = "12";
+
+    public static Connection getConnect() {
+        try {
+            Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+            Connection conn = DriverManager.getConnection(URL, USER, PASS);
+            System.out.println(">> Kết nối DB thành công");
+            return conn;
+        } catch (Exception e) {
+            System.out.println(">> Lỗi kết nối DB!");
+            e.printStackTrace();
+            return null;
         }
     }
 }

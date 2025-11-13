@@ -1,43 +1,47 @@
+package remotecommandexecution.gui;
 
-package remote.command.execution.gui;
+import remotecommandexecution.db.CommandHistoryDAO;
+import remotecommandexecution.model.CommandHistory;
 
-public class HistoryForm extends javax.swing.JFrame {
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+
+public class HistoryForm extends JFrame {
+
+    DefaultTableModel model = new DefaultTableModel(
+        new String[]{"ID", "User", "Server IP", "Command", "Result", "Error", "Client IP"}, 0
+    );
+
+    JTable table = new JTable(model);
 
     public HistoryForm() {
-        initComponents();
+        setTitle("Lịch sử lệnh");
+        setSize(900, 500);
+        setLayout(new BorderLayout());
+
+        table.setRowHeight(28);
+        add(new JScrollPane(table), BorderLayout.CENTER);
+
+        JButton reload = new JButton("Tải lại");
+        reload.addActionListener(e -> load());
+        add(reload, BorderLayout.NORTH);
+
+        load();
+        setLocationRelativeTo(null);
+        setVisible(true);
     }
 
-   
-    @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
-    private void initComponents() {
+    private void load() {
+        model.setRowCount(0);
+        CommandHistoryDAO dao = new CommandHistoryDAO();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 400, Short.MAX_VALUE)
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 300, Short.MAX_VALUE)
-        );
-
-        pack();
-    }// </editor-fold>//GEN-END:initComponents
-
-   
-    public static void main(String args[]) {
-   
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new HistoryForm().setVisible(true);
-            }
-        });
+        for (CommandHistory h : dao.getAll()) {
+            model.addRow(new Object[]{
+                h.getId(), h.getUsername(), h.getServerIp(),
+                h.getCommand(), h.getResult(),
+                h.getError(), h.getClientIp()
+            });
+        }
     }
-
-    // Variables declaration - do not modify//GEN-BEGIN:variables
-    // End of variables declaration//GEN-END:variables
 }

@@ -1,63 +1,77 @@
-package remote.command.execution.server;
+package remotecommandexecution.server;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import remotecommandexecution.db.UserDAO;
+import remotecommandexecution.db.CommandHistoryDAO;
+import remotecommandexecution.model.User;
+
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Server {
+
     public static void main(String[] args) {
         try (ServerSocket serverSocket = new ServerSocket(12345)) {
-            System.out.println("Server is listening on port 12345...");
+
+            System.out.println(">> SERVER RUNNING ON PORT 12345");
 
             while (true) {
-                Socket clientSocket = serverSocket.accept();
-                System.out.println("Client connected: " + clientSocket.getInetAddress());
-
-                new Thread(() -> {
-                    try (
-                        BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                        PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-                    ) {
-                        String username = in.readLine();
-                        String password = in.readLine();
-
-                        if ("admin".equals(username) && "password".equals(password)) {
-                            out.println("Authentication successful.");
-                            String command;
-                            while ((command = in.readLine()) != null) {
-                                System.out.println("Executing command: " + command);
-
-                                try {
-                                    Process process = Runtime.getRuntime().exec("cmd.exe /c " + command);
-                                    BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                                    String line;
-                                    while ((line = reader.readLine()) != null) {
-                                        out.println(line);
-                                    }
-                                    out.println("END_OF_COMMAND");
-                                } catch (Exception e) {
-                                    out.println("Error executing command: " + e.getMessage());
-                                    out.println("END_OF_COMMAND");
-                                }
-                            }
-                        } else {
-                            out.println("Authentication failed.");
-                        }
-                    } catch (Exception e) {
-                        System.err.println("Error handling client: " + e.getMessage());
-                    } finally {
-                        try {
-                            clientSocket.close();
-                        } catch (Exception e) {
-                            System.err.println("Error closing client socket: " + e.getMessage());
-                        }
-                    }
-                }).start();
+                Socket client = serverSocket.accept();
+                new Thread(() -> handleClient(client)).start();
             }
+
         } catch (Exception e) {
-            System.err.println("Server error: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private static void handleClient(Socket socket) {
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
+
+            String username = in.readLine();
+            String passwordHash = in.readLine();
+
+            UserDAO userDAO = new UserDAO();
+            User user = userDAO.login(username, passwordHash);
+
+            if (user == null) {
+                out.println("AUTH_FAILED");
+                socket.close();
+                return;
+            }
+
+            out.println("AUTH_OK:" + user.getFullName());
+
+            CommandHistoryDAO historyDAO = new CommandHistoryDAO();
+
+            String command;
+            while ((command = in.readLine()) != null) {
+
+                Process p = Runtime.getRuntime().exec("cmd.exe /c " + command);
+                BufferedReader cmdReader = new BufferedReader(
+                        new InputStreamReader(p.getInputStream()));
+
+                StringBuilder result = new StringBuilder();
+                String line;
+                while ((line = cmdReader.readLine()) != null) {
+                    out.println(line);
+                    result.append(line).append("\n");
+                }
+                out.println("END");
+
+                // Lưu lịch sử vào DB
+                historyDAO.saveHistory(
+                        user.getId(),
+                        socket.getInetAddress().toString(),
+                        command,
+                        result.toString(),
+                        socket.getInetAddress().toString()
+                );
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
