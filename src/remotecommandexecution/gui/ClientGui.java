@@ -1,108 +1,66 @@
-package remote.command.execution.gui;
+package remotecommandexecution.gui;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 
 public class ClientGui extends JFrame {
-    private Socket socket;
-    private BufferedReader in;
+
     private PrintWriter out;
+    private BufferedReader in;
 
-    private JTextField serverAddressField = new JTextField("localhost", 15);
-    private JTextField portField = new JTextField("12345", 5);
-    private JTextField usernameField = new JTextField(15);
-    private JPasswordField passwordField = new JPasswordField(15);
-    private JButton connectButton = new JButton("Connect");
-    private JTextArea outputArea = new JTextArea(20, 50);
-    private JTextField commandField = new JTextField(40);
-    private JButton sendButton = new JButton("Send");
+    private JTextArea outputArea = new JTextArea();
+    private JTextField commandField = new JTextField();
 
-    public ClientGui() {
-        super("RCE Client");
+    public ClientGui(Socket socket, BufferedReader in, PrintWriter out, String fullName) {
+        this.in = in;
+        this.out = out;
 
-        JPanel connectionPanel = new JPanel(new FlowLayout());
-        connectionPanel.add(new JLabel("Server Address:"));
-        connectionPanel.add(serverAddressField);
-        connectionPanel.add(new JLabel("Port:"));
-        connectionPanel.add(portField);
-        connectionPanel.add(new JLabel("Username:"));
-        connectionPanel.add(usernameField);
-        connectionPanel.add(new JLabel("Password:"));
-        connectionPanel.add(passwordField);
-        connectionPanel.add(connectButton);
+        setTitle("Remote Command - User: " + fullName);
+        setSize(900, 550);
+        setLayout(new BorderLayout());
+
+        JPanel top = new JPanel();
+        JButton history = new JButton("Xem lịch sử");
+        top.add(history);
+        history.addActionListener(e -> new HistoryForm());
+        add(top, BorderLayout.NORTH);
 
         outputArea.setEditable(false);
-        JScrollPane scrollPane = new JScrollPane(outputArea);
+        outputArea.setFont(new Font("Consolas", Font.PLAIN, 14));
+        add(new JScrollPane(outputArea), BorderLayout.CENTER);
 
-        JPanel commandPanel = new JPanel(new FlowLayout());
-        commandPanel.add(new JLabel("Command:"));
-        commandPanel.add(commandField);
-        commandPanel.add(sendButton);
+        JPanel bottom = new JPanel(new BorderLayout());
+        JButton send = new JButton("Gửi");
+        bottom.add(commandField, BorderLayout.CENTER);
+        bottom.add(send, BorderLayout.EAST);
+        add(bottom, BorderLayout.SOUTH);
 
-        setLayout(new BorderLayout());
-        add(connectionPanel, BorderLayout.NORTH);
-        add(scrollPane, BorderLayout.CENTER);
-        add(commandPanel, BorderLayout.SOUTH);
-
-        connectButton.addActionListener(e -> connect());
-        sendButton.addActionListener(e -> sendCommand());
+        send.addActionListener(e -> sendCommand());
         commandField.addActionListener(e -> sendCommand());
 
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        pack();
         setLocationRelativeTo(null);
         setVisible(true);
     }
 
-    private void connect() {
-        try {
-            String serverAddress = serverAddressField.getText();
-            int port = Integer.parseInt(portField.getText());
-            socket = new Socket(serverAddress, port);
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(socket.getOutputStream(), true);
-
-            out.println(usernameField.getText());
-            out.println(new String(passwordField.getPassword()));
-
-            String response = in.readLine();
-            outputArea.append(response + "\n");
-
-            if (!"Authentication successful.".equals(response)) {
-                socket.close();
-            }
-        } catch (Exception e) {
-            outputArea.append("Connection error: " + e.getMessage() + "\n");
-        }
-    }
-
     private void sendCommand() {
-        if (out != null) {
-            String command = commandField.getText();
-            out.println(command);
-            commandField.setText("");
+        String cmd = commandField.getText();
+        if (cmd.isEmpty()) return;
 
-            new Thread(() -> {
-                try {
-                    String line;
-                    while (!(line = in.readLine()).equals("END_OF_COMMAND")) {
-                        final String finalLine = line;
-                        SwingUtilities.invokeLater(() -> outputArea.append(finalLine + "\n"));
-                    }
-                } catch (Exception e) {
-                    SwingUtilities.invokeLater(() -> outputArea.append("Error receiving data: " + e.getMessage() + "\n"));
+        out.println(cmd);
+        commandField.setText("");
+
+        new Thread(() -> {
+            try {
+                String line;
+                while (!(line = in.readLine()).equals("END")) {
+                    outputArea.append(line + "\n");
                 }
-            }).start();
-        }
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(ClientGui::new);
+                outputArea.append("------ END ------\n\n");
+            } catch (Exception e) {
+                outputArea.append("Lỗi đọc dữ liệu: " + e.getMessage());
+            }
+        }).start();
     }
 }

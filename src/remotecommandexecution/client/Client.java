@@ -1,4 +1,4 @@
-package remote.command.execution.client;
+package remotecommandexecution.client;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
